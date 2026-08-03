@@ -22,7 +22,7 @@ function Signup() {
 
         try {
             // Adjust the URL if your backend is deployed elsewhere
-            const response = await fetch('http://localhost:5000/api/signup', {
+            const response = await fetch('https://zerodha-1-znoy.onrender.com/signup', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
