@@ -21,7 +21,6 @@ function Signup() {
         setMessage('');
 
         try {
-            // Adjust the URL if your backend is deployed elsewhere
             const response = await fetch('https://zerodha-1-znoy.onrender.com/signup', {
                 method: 'POST',
                 headers: {
@@ -33,10 +32,15 @@ function Signup() {
             const data = await response.json();
 
             if (response.ok) {
-                // Save auth token to localStorage for authenticated requests
                 localStorage.setItem('token', data.token);
                 setIsError(false);
-                setMessage('Signup successful! Token stored.');
+                setMessage('Signup successful! Redirecting to dashboard...');
+
+                // REDIRECT TO YOUR DASHBOARD RENDER URL HERE
+                setTimeout(() => {
+                    window.location.href = 'https://YOUR-DASHBOARD-RENDER-URL.onrender.com';
+                }, 1500);
+
             } else {
                 setIsError(true);
                 setMessage(data.message || 'Signup failed.');
@@ -47,6 +51,7 @@ function Signup() {
         }
     };
 
+    // ⬇️ THIS RETURN BLOCK BELOW IS YOUR JSX RENDERING CODE ⬇️
     return (
         <div style={{ maxWidth: '400px', margin: '50px auto', padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>
             <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Sign Up</h2>
@@ -90,6 +95,7 @@ function Signup() {
                         value={formData.password}
                         onChange={handleChange}
                         required
+                        autoComplete="new-password"
                         style={{ width: '100%', padding: '8px', marginTop: '5px', boxSizing: 'border-box' }}
                     />
                 </div>
