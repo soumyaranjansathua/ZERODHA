@@ -1,6 +1,6 @@
 const { model } = require("mongoose");
-const { UsersSchema } = require("../schemas/UsersSchema");
+const UsersSchema = require("../schemas/UsersSchema"); // Clean import
 
-const UsersModel = new model("user", UsersSchema);
+const UsersModel = model("user", UsersSchema); // Removed 'new'
 
 module.exports = { UsersModel };
