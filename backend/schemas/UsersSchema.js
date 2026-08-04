@@ -20,4 +20,4 @@ const UsersSchema = new Schema({
     },
 });
 
-module.exports = { UsersSchema };
+module.exports =  UsersSchema ;
