@@ -38,7 +38,7 @@ function Signup() {
 
                 // REDIRECT TO YOUR DASHBOARD RENDER URL HERE
                 setTimeout(() => {
-                    window.location.href = 'https://YOUR-DASHBOARD-RENDER-URL.onrender.com';
+                    window.location.href = 'https://zerodha-2-tbma.onrender.com';
                 }, 1500);
 
             } else {
