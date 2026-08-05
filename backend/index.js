@@ -254,22 +254,22 @@ app.get("/allPositions", async (req, res) => {
 
 app.post("/newOrder", async (req, res) => {
     try {
-        // 1. Save to Orders
+        // 1. Save the buy order
         let newOrder = new OrdersModel({
             name: req.body.name,
-            qty: req.body.qty,
-            price: req.body.price,
-            mode: req.body.mode,
+            qty: Number(req.body.qty),
+            price: Number(req.body.price),
+            mode: req.body.mode || "BUY",
         });
         await newOrder.save();
 
-        // 2. Save/Update in Positions
+        // 2. Save into Positions so the Positions tab displays it
         let newPosition = new PositionsModel({
-            product: "CNC",
+            product: req.body.product || "CNC",
             name: req.body.name,
-            qty: req.body.qty,
-            avg: req.body.price,
-            price: req.body.price,
+            qty: Number(req.body.qty),
+            avg: Number(req.body.price),
+            price: Number(req.body.price),
             net: "0.00%",
             day: "0.00%",
             isLoss: false,
@@ -278,6 +278,7 @@ app.post("/newOrder", async (req, res) => {
 
         res.status(201).json({ message: "Order & Position added successfully" });
     } catch (error) {
+        console.error("Error creating order:", error);
         res.status(500).json({ error: error.message });
     }
 });
