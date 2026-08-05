@@ -242,22 +242,44 @@ app.get("/allHoldings", async (req, res) => {
     res.json(allHoldings);
 });
 
-app.get("/", async (req, res) => {
-    let allPositions = await PositionsModel.find({});
-    res.json(allPositions);
+// --- GET ALL POSITIONS ---
+app.get("/allPositions", async (req, res) => {
+    try {
+        let allPositions = await PositionsModel.find({});
+        res.json(allPositions);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 app.post("/newOrder", async (req, res) => {
-    let newOrder = new OrdersModel({
-        name: req.body.name,
-        qty: req.body.qty,
-        price: req.body.price,
-        mode: req.body.mode,
-    });
-       
-        newOrder.save();
-        res.send("Order added");
-    
+    try {
+        // 1. Save to Orders
+        let newOrder = new OrdersModel({
+            name: req.body.name,
+            qty: req.body.qty,
+            price: req.body.price,
+            mode: req.body.mode,
+        });
+        await newOrder.save();
+
+        // 2. Save/Update in Positions
+        let newPosition = new PositionsModel({
+            product: "CNC",
+            name: req.body.name,
+            qty: req.body.qty,
+            avg: req.body.price,
+            price: req.body.price,
+            net: "0.00%",
+            day: "0.00%",
+            isLoss: false,
+        });
+        await newPosition.save();
+
+        res.status(201).json({ message: "Order & Position added successfully" });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 app.listen(PORT, () => {
