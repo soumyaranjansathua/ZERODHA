@@ -1,40 +1,68 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useContext } from "react";
 import axios from "axios";
 import GeneralContext from "./GeneralContext";
+import { API_BASE_URL } from "../config";
 import "./BuyActionWindow.css";
 
 const BuyActionWindow = ({ uid }) => {
+  const { closeBuyWindow, triggerRefresh } = useContext(GeneralContext);
   const [stockQuantity, setStockQuantity] = useState(1);
-  const [stockPrice, setStockPrice] = useState(0.0);
+  const [stockPrice, setStockPrice] = useState(100.0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const handleBuyClick = async () => {
+  const handleBuyClick = async (e) => {
+    e.preventDefault();
+    if (stockQuantity <= 0) {
+      setErrorMessage("Quantity must be at least 1");
+      return;
+    }
+    if (stockPrice <= 0) {
+      setErrorMessage("Price must be greater than 0");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMessage("");
+
     try {
-      await axios.post("https://zerodha-1-znoy.onrender.com/newOrder", {
+      await axios.post(`${API_BASE_URL}/newOrder`, {
         name: uid,
         qty: Number(stockQuantity),
         price: Number(stockPrice),
         mode: "BUY",
-        product: "CNC", // Passed product type
+        product: "CNC",
       });
 
-      // Close the modal window only after request completes
-      GeneralContext.closeBuyWindow();
-
-      // Refresh page so Positions component fetches the updated database entry
-      window.location.reload();
+      // Notify parent components to reload data without refreshing whole window
+      triggerRefresh();
+      closeBuyWindow();
     } catch (error) {
       console.error("Error placing order:", error);
+      setErrorMessage(
+        error.response?.data?.message || "Failed to place order. Please try again."
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleCancelClick = () => {
-    GeneralContext.closeBuyWindow();
+  const handleCancelClick = (e) => {
+    e.preventDefault();
+    closeBuyWindow();
   };
+
+  const marginRequired = (Number(stockQuantity) * Number(stockPrice)).toFixed(2);
 
   return (
     <div className="container" id="buy-window" draggable="true">
       <div className="regular-order">
+        <h4 style={{ margin: "5px 0 15px 0", color: "#444" }}>Buy {uid}</h4>
+        {errorMessage && (
+          <p style={{ color: "#d9534f", fontSize: "13px", margin: "5px 0" }}>
+            {errorMessage}
+          </p>
+        )}
         <div className="inputs">
           <fieldset>
             <legend>Qty.</legend>
@@ -42,8 +70,10 @@ const BuyActionWindow = ({ uid }) => {
               type="number"
               name="qty"
               id="qty"
-              onChange={(e) => setStockQuantity(e.target.value)}
+              min="1"
+              onChange={(e) => setStockQuantity(Math.max(1, parseInt(e.target.value) || 1))}
               value={stockQuantity}
+              disabled={isSubmitting}
             />
           </fieldset>
           <fieldset>
@@ -53,22 +83,36 @@ const BuyActionWindow = ({ uid }) => {
               name="price"
               id="price"
               step="0.05"
-              onChange={(e) => setStockPrice(e.target.value)}
+              min="0.05"
+              onChange={(e) => setStockPrice(parseFloat(e.target.value) || 0)}
               value={stockPrice}
+              disabled={isSubmitting}
             />
           </fieldset>
         </div>
       </div>
 
       <div className="buttons">
-        <span>Margin required ₹140.65</span>
+        <span>Margin required ₹{marginRequired}</span>
         <div>
-          <Link to="#" className="btn btn-blue" onClick={handleBuyClick}>
-            Buy
-          </Link>
-          <Link to="#" className="btn btn-grey" onClick={handleCancelClick}>
+          <button
+            type="button"
+            className="btn btn-blue"
+            onClick={handleBuyClick}
+            disabled={isSubmitting}
+            style={{ opacity: isSubmitting ? 0.7 : 1, cursor: isSubmitting ? "not-allowed" : "pointer" }}
+          >
+            {isSubmitting ? "Placing..." : "Buy"}
+          </button>
+          <button
+            type="button"
+            className="btn btn-grey"
+            onClick={handleCancelClick}
+            disabled={isSubmitting}
+            style={{ marginLeft: "8px", cursor: "pointer" }}
+          >
             Cancel
-          </Link>
+          </button>
         </div>
       </div>
     </div>

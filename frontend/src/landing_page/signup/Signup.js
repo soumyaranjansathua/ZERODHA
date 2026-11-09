@@ -1,122 +1,249 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import { API_BASE_URL, DASHBOARD_URL } from "../../config";
 
 function Signup() {
-    const [formData, setFormData] = useState({
-        username: '',
-        email: '',
-        password: ''
+  const [formData, setFormData] = useState({
+    username: "",
+    email: "",
+    password: "",
+  });
+  const [message, setMessage] = useState("");
+  const [isError, setIsError] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isWakingUp, setIsWakingUp] = useState(false);
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
     });
-    const [message, setMessage] = useState('');
-    const [isError, setIsError] = useState(false);
+  };
 
-    const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
-    };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setMessage("");
+    setIsError(false);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setMessage('');
+    if (formData.password.length < 6) {
+      setIsError(true);
+      setMessage("Password must be at least 6 characters long.");
+      return;
+    }
 
-        try {
-            const response = await fetch('https://zerodha-1-znoy.onrender.com/signup', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(formData)
-            });
+    setIsLoading(true);
+    const wakeTimer = setTimeout(() => {
+      setIsWakingUp(true);
+    }, 2500);
 
-            const data = await response.json();
+    try {
+      const response = await fetch(`${API_BASE_URL}/signup`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
 
-            if (response.ok) {
-                localStorage.setItem('token', data.token);
-                setIsError(false);
-                setMessage('Signup successful! Redirecting to dashboard...');
+      const data = await response.json();
+      clearTimeout(wakeTimer);
+      setIsWakingUp(false);
 
-                // REDIRECT TO YOUR DASHBOARD RENDER URL HERE
-                setTimeout(() => {
-                    window.location.href = 'https://zerodha-2-tbma.onrender.com';
-                }, 1500);
+      if (response.ok) {
+        localStorage.setItem("token", data.token);
+        if (data.user?.username) localStorage.setItem("username", data.user.username);
+        if (data.user?.email) localStorage.setItem("email", data.user.email);
 
-            } else {
-                setIsError(true);
-                setMessage(data.message || 'Signup failed.');
-            }
-        } catch (err) {
-            setIsError(true);
-            setMessage('Network error. Is your backend server running?');
-        }
-    };
+        setIsError(false);
+        setMessage("Signup successful! Redirecting to your Kite dashboard...");
 
-    // ⬇️ THIS RETURN BLOCK BELOW IS YOUR JSX RENDERING CODE ⬇️
-    return (
-        <div style={{ maxWidth: '400px', margin: '50px auto', padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>
-            <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Sign Up</h2>
-            
-            {message && (
-                <p style={{ color: isError ? 'red' : 'green', textAlign: 'center' }}>
-                    {message}
-                </p>
-            )}
+        // Cross-domain token forwarding to dashboard
+        const targetUrl = new URL(DASHBOARD_URL);
+        targetUrl.searchParams.set("token", data.token);
+        if (data.user?.username) targetUrl.searchParams.set("username", data.user.username);
+        if (data.user?.email) targetUrl.searchParams.set("email", data.user.email);
 
-            <form onSubmit={handleSubmit}>
-                <div style={{ marginBottom: '15px' }}>
-                    <label>Username</label>
-                    <input
-                        type="text"
-                        name="username"
-                        value={formData.username}
-                        onChange={handleChange}
-                        required
-                        style={{ width: '100%', padding: '8px', marginTop: '5px', boxSizing: 'border-box' }}
-                    />
-                </div>
+        setTimeout(() => {
+          window.location.href = targetUrl.toString();
+        }, 1500);
+      } else {
+        setIsError(true);
+        setMessage(data.message || "Signup failed. Please try again.");
+      }
+    } catch (err) {
+      clearTimeout(wakeTimer);
+      setIsWakingUp(false);
+      setIsError(true);
+      setMessage("Server connection failed. The backend service may still be waking up on Render. Please try again in 10-15 seconds.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-                <div style={{ marginBottom: '15px' }}>
-                    <label>Email</label>
-                    <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        required
-                        style={{ width: '100%', padding: '8px', marginTop: '5px', boxSizing: 'border-box' }}
-                    />
-                </div>
-
-                <div style={{ marginBottom: '15px' }}>
-                    <label>Password</label>
-                    <input
-                        type="password"
-                        name="password"
-                        value={formData.password}
-                        onChange={handleChange}
-                        required
-                        autoComplete="new-password"
-                        style={{ width: '100%', padding: '8px', marginTop: '5px', boxSizing: 'border-box' }}
-                    />
-                </div>
-
-                <button
-                    type="submit"
-                    style={{
-                        width: '100%',
-                        padding: '10px',
-                        backgroundColor: '#387ed1',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
-                    }}
-                >
-                    Create Account
-                </button>
-            </form>
+  return (
+    <div className="container" style={{ minHeight: "75vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "420px",
+          padding: "36px 32px",
+          backgroundColor: "#ffffff",
+          border: "1px solid #e0e0e0",
+          borderRadius: "8px",
+          boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
+        }}
+      >
+        <div style={{ textAlign: "center", marginBottom: "24px" }}>
+          <img
+            src="/media/images/logo.svg"
+            alt="Zerodha"
+            style={{ width: "140px", marginBottom: "16px" }}
+          />
+          <h2 style={{ fontSize: "22px", fontWeight: "600", color: "#424242", margin: 0 }}>
+            Open a Zerodha Account
+          </h2>
+          <p style={{ color: "#757575", fontSize: "14px", marginTop: "6px" }}>
+            Start investing in stocks and mutual funds for free
+          </p>
         </div>
-    );
+
+        {isWakingUp && (
+          <div
+            style={{
+              backgroundColor: "#e8f4fd",
+              border: "1px solid #b8daff",
+              color: "#004085",
+              fontSize: "13px",
+              padding: "10px",
+              borderRadius: "4px",
+              marginBottom: "16px",
+            }}
+          >
+            ⏱️ Connecting to server... Free tier cloud servers take ~30s to wake up on first load.
+          </div>
+        )}
+
+        {message && (
+          <div
+            style={{
+              backgroundColor: isError ? "#fce8e6" : "#e6f4ea",
+              border: `1px solid ${isError ? "#f5c6cb" : "#c3e6cb"}`,
+              color: isError ? "#c5221f" : "#137333",
+              fontSize: "13px",
+              padding: "10px",
+              borderRadius: "4px",
+              marginBottom: "16px",
+              textAlign: "center",
+            }}
+          >
+            {message}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: "16px" }}>
+            <label style={{ display: "block", fontSize: "14px", fontWeight: "500", color: "#444", marginBottom: "6px" }}>
+              Username
+            </label>
+            <input
+              type="text"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              placeholder="e.g. soumya"
+              required
+              disabled={isLoading}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: "1px solid #ccc",
+                borderRadius: "4px",
+                fontSize: "14px",
+                boxSizing: "border-box",
+                outline: "none",
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: "16px" }}>
+            <label style={{ display: "block", fontSize: "14px", fontWeight: "500", color: "#444", marginBottom: "6px" }}>
+              Email address
+            </label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="e.g. soumya@example.com"
+              required
+              disabled={isLoading}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: "1px solid #ccc",
+                borderRadius: "4px",
+                fontSize: "14px",
+                boxSizing: "border-box",
+                outline: "none",
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: "22px" }}>
+            <label style={{ display: "block", fontSize: "14px", fontWeight: "500", color: "#444", marginBottom: "6px" }}>
+              Password (min. 6 characters)
+            </label>
+            <input
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              placeholder="Create a strong password"
+              required
+              autoComplete="new-password"
+              disabled={isLoading}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: "1px solid #ccc",
+                borderRadius: "4px",
+                fontSize: "14px",
+                boxSizing: "border-box",
+                outline: "none",
+              }}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            style={{
+              width: "100%",
+              padding: "12px",
+              backgroundColor: "#387ed1",
+              color: "#ffffff",
+              fontSize: "15px",
+              fontWeight: "600",
+              border: "none",
+              borderRadius: "4px",
+              cursor: isLoading ? "not-allowed" : "pointer",
+              opacity: isLoading ? 0.7 : 1,
+              transition: "background-color 0.2s",
+            }}
+          >
+            {isLoading ? "Creating account..." : "Sign Up"}
+          </button>
+        </form>
+
+        <div style={{ textAlign: "center", marginTop: "20px", fontSize: "14px", color: "#666" }}>
+          Already have an account?{" "}
+          <Link to="/login" style={{ color: "#387ed1", textDecoration: "none", fontWeight: "500" }}>
+            Log in
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default Signup;
